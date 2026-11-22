@@ -1,0 +1,124 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-11-22T00:00:00+00:00",
+    "name": "RuneScape: Dragonwilds",
+    "author": "fossiltalk@users.noreply.github.com",
+    "description": "RuneScape: Dragonwilds dedicated server (Steam app 4019830, native Linux). Up to 6 players. RAM: about 2 GB plus 1 GB per player. Needs two UDP allocations: game port (primary) and the world settings beacon port (BEACON_PORT). Host and container ports must match. Adapted from pelican-eggs/games-steamcmd (Red-Thirten, MIT) for github.com/Fossiltalk/runescape-dragonwilds-pterodactyl.",
+    "features": [
+        "steam_disk_space"
+    ],
+    "docker_images": {
+        "SteamCMD_Debian": "ghcr.io/ptero-eggs/steamcmd:debian"
+    },
+    "file_denylist": [],
+    "startup": "./RSDragonwildsServer.sh -log -Port={{SERVER_PORT}} -BeaconPort={{BEACON_PORT}} -ini:Game:[/Script/Engine.GameSession]:MaxPlayers={{MAX_PLAYERS}}",
+    "config": {
+        "files": "{\n    \"RSDragonwilds/Saved/Config/LinuxServer/DedicatedServer.ini\": {\n        \"parser\": \"ini\",\n        \"find\": {\n            \"[/Script/Dominion.DedicatedServerSettings].OwnerId\": \"{{server.build.env.OWNER_ID}}\",\n            \"[/Script/Dominion.DedicatedServerSettings].ServerName\": \"{{server.build.env.SERVER_NAME}}\",\n            \"[/Script/Dominion.DedicatedServerSettings].DefaultWorldName\": \"{{server.build.env.DEFAULT_WORLD_NAME}}\",\n            \"[/Script/Dominion.DedicatedServerSettings].AdminPassword\": \"{{server.build.env.ADMIN_PASSWORD}}\",\n            \"[/Script/Dominion.DedicatedServerSettings].WorldPassword\": \"{{server.build.env.WORLD_PASSWORD}}\"\n        }\n    }\n}",
+        "startup": "{\n    \"done\": \"CREATE SESSION - Advertise\"\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n\n## RuneScape: Dragonwilds install script (Pterodactyl egg)\n## Adapted from pelican-eggs/games-steamcmd runescape_dragonwilds (David Wolfe / Red-Thirten, MIT).\n## Install container: ghcr.io/ptero-eggs/installers:debian\n\nset -u\nexport HOME=/mnt/server\ncd /tmp\nmkdir -p \"$HOME/steamcmd\" \"$HOME/steamapps\"\ncurl -sSL -o steamcmd.tar.gz https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz\ntar -xzf steamcmd.tar.gz -C \"$HOME/steamcmd\"\ncd \"$HOME/steamcmd\"\n\n# SteamCMD fails otherwise, even as root. Ownership is reset at the end.\nchown -R root:root /mnt\n\nBINARY_DIR=$HOME/RSDragonwilds/Binaries/Linux\nBINARY_NAME=RSDragonwildsServer-Linux-Shipping\n\n# Install/verify the server (app 4019830, anonymous). SteamCMD sometimes fails on\n# its first run while it self-updates, so retry up to 3 times.\nfor attempt in 1 2 3; do\n    ./steamcmd.sh +force_install_dir \"$HOME\" +login anonymous +app_update \"${SRCDS_APPID}\" validate +quit\n    [[ -f \"$BINARY_DIR/$BINARY_NAME\" ]] && break\n    echo \"SteamCMD attempt $attempt did not produce the server binary, retrying...\"\ndone\n\n# 32 and 64 bit Steam client libraries\nmkdir -p \"$HOME/.steam/sdk32\" \"$HOME/.steam/sdk64\"\ncp -v linux32/steamclient.so \"$HOME/.steam/sdk32/steamclient.so\"\ncp -v linux64/steamclient.so \"$HOME/.steam/sdk64/steamclient.so\"\n\nif [[ ! -f \"$BINARY_DIR/$BINARY_NAME\" ]]; then\n    echo -e \"\\n\\nSteamCMD failed to install the RuneScape Dragonwilds Dedicated Server!\"\n    echo -e \"\\tTry reinstalling the server again.\\n\"\n    exit 1\nfi\nchmod +x \"$BINARY_DIR/$BINARY_NAME\"\nCRASHPAD=$HOME/RSDragonwilds/Plugins/Developer/Sentry/Binaries/Linux/crashpad_handler\n[[ -f \"$CRASHPAD\" ]] && chmod +x \"$CRASHPAD\"\nif [[ -f \"$HOME/RSDragonwildsServer.sh\" ]]; then\n    chmod +x \"$HOME/RSDragonwildsServer.sh\"\n    echo \"Launcher: RSDragonwildsServer.sh present\"\nelse\n    echo \"Launcher: RSDragonwildsServer.sh MISSING, use $BINARY_NAME directly\"\nfi\n\n# Seed DedicatedServer.ini so Wings' ini parser has the section to edit.\n# Never touch an existing file (it holds the generated ServerGuid).\nINI_DIR=$HOME/RSDragonwilds/Saved/Config/LinuxServer\nINI=$INI_DIR/DedicatedServer.ini\nSECTION='[/Script/Dominion.DedicatedServerSettings]'\nmkdir -p \"$INI_DIR\" \"$HOME/RSDragonwilds/Saved/SaveGames\"\nif [[ ! -f \"$INI\" ]]; then\n    printf '[SectionsToSave]\\nbCanSaveAllSections=true\\n\\n%s\\n' \"$SECTION\" > \"$INI\"\n    echo \"Seeded $INI\"\nelif ! grep -qF \"$SECTION\" \"$INI\"; then\n    printf '\\n%s\\n' \"$SECTION\" >> \"$INI\"\n    echo \"Added $SECTION to existing $INI\"\nelse\n    echo \"Kept existing $INI\"\nfi\n\nchown -R 988:988 /mnt/server\necho -e \"\\nRuneScape Dragonwilds Dedicated Server successfully installed!\\n\"\nexit 0\n",
+            "container": "ghcr.io/ptero-eggs/installers:debian",
+            "entrypoint": "/bin/bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Server Name",
+            "description": "Server name, shown as \"Created By\" in the in-game world list. Written to DedicatedServer.ini on every start.",
+            "env_variable": "SERVER_NAME",
+            "default_value": "Dragonwilds",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:16",
+            "field_type": "text"
+        },
+        {
+            "name": "Default World Name",
+            "description": "Name of the world created on first start (an uploaded or existing .sav keeps its own name). Written to DedicatedServer.ini on every start.",
+            "env_variable": "DEFAULT_WORLD_NAME",
+            "default_value": "Default World",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:32",
+            "field_type": "text"
+        },
+        {
+            "name": "[Required] Owner ID",
+            "description": "Your 32-character Player ID (EOS ID). In game: Settings, at the bottom, use the copy button. The server will not start without it. Written to DedicatedServer.ini on every start.",
+            "env_variable": "OWNER_ID",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|alpha_num|size:32",
+            "field_type": "text"
+        },
+        {
+            "name": "Admin Password",
+            "description": "Password for the Server Management tab (Pause menu > Settings). At least 12 characters; generate one with openssl rand. Hidden from the user view; admins see it in Admin > Servers > Startup.",
+            "env_variable": "ADMIN_PASSWORD",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|min:12",
+            "field_type": "text"
+        },
+        {
+            "name": "World Password",
+            "description": "Optional password to join. Leave empty (joining password-protected servers is flaky); access control is Tailscale node sharing.",
+            "env_variable": "WORLD_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Max Players",
+            "description": "Maximum number of players (1-6).",
+            "env_variable": "MAX_PLAYERS",
+            "default_value": "6",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|between:1,6",
+            "field_type": "text"
+        },
+        {
+            "name": "Beacon Port",
+            "description": "UDP port for the world settings beacon (-BeaconPort). Must equal the server's second allocation, with matching host and container ports.",
+            "env_variable": "BEACON_PORT",
+            "default_value": "8888",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "required|integer|between:1024,65535",
+            "field_type": "text"
+        },
+        {
+            "name": "Automatic Updates",
+            "description": "Check Steam for a server update on every start (1 enable, 0 disable). Default 0: a silent update can break the version match with players' clients, so update manually (see README).",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "[System] Dedicated Server App ID",
+            "description": "Steam App ID used for installation and updates.",
+            "env_variable": "SRCDS_APPID",
+            "default_value": "4019830",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|integer|in:4019830",
+            "field_type": "text"
+        }
+    ]
+}
