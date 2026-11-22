@@ -1,0 +1,14 @@
+# Added to /mnt/cache/appdata/pterodactyl/sidecars/docker-compose.yml (project palworld_sidecars, anchor x-ts)
+  dragonwilds:
+    <<: *ts
+    container_name: dragonwilds-ts
+    hostname: dragonwilds
+    environment:
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      TS_HOSTNAME: dragonwilds
+      TS_AUTH_ONCE: "true"
+      TS_ACCEPT_DNS: "false"
+    volumes:
+      - /mnt/cache/appdata/pterodactyl/sidecars/dragonwilds/state:/var/lib/tailscale
+      - /mnt/cache/appdata/pterodactyl/sidecars/fwd-dragonwilds.sh:/fwd.sh:ro

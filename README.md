@@ -42,7 +42,9 @@ A Pterodactyl egg for the [RuneScape: Dragonwilds](https://dragonwilds.runescape
 
 Tower is behind CGNAT, so the public Worlds list (advertised through Epic Online Services with the public IP) **does not work**. Friends use the **Direct** tab instead.
 
-A Tailscale sidecar node `dragonwilds` on `pterodactyl_nw` DNATs UDP 7777 and 8888 from the tailnet to the host ports, like the `skyrim` and `vrisingserver` sidecars. The sidecar files go in `sidecar/` (added in Phase 2). Share the `dragonwilds` node with friends from the Tailscale admin console.
+A Tailscale sidecar node `dragonwilds` on `pterodactyl_nw` DNATs UDP 7777 and 8888 from the tailnet to the host ports, like the `skyrim` and `vrisingserver` sidecars. The sidecar files are in [`sidecar/`](sidecar/). Tower's live node: `dragonwilds` = `100.109.134.72`.
+
+First login: containerboot only waits 60 s for an interactive login, so the link expires before it can be approved. Log the node in once with a one-off userspace `tailscale up --timeout=0` container on the same state dir, remove it, then start the sidecar. Share the `dragonwilds` node with friends from the Tailscale admin console.
 
 ## Updating
 
@@ -63,6 +65,6 @@ Back up `RSDragonwilds/Saved/SaveGames/` and `RSDragonwilds/Saved/Config/LinuxSe
 
 1. Accept the Tailscale node share for `dragonwilds` and keep Tailscale running.
 2. Run the same game version as the server.
-3. In game, open **Worlds → Direct** and enter `<dragonwilds Tailscale IP>:7777`. Then join.
+3. In game, open **Worlds → Direct** and enter `100.109.134.72:7777`. Then join.
 
 Direct join by a Tailscale 100.x IP is not yet confirmed; it is tested in Phase 4 of [`BRIEFS.md`](BRIEFS.md).
