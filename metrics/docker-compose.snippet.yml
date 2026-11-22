@@ -1,0 +1,13 @@
+  dragonwilds-exporter:
+    image: python:3.13.17-alpine
+    restart: unless-stopped
+    user: "65534:65534"
+    command: ["python", "-u", "/app/dragonwilds_exporter.py"]
+    environment:
+      DW_SERVER: Dragonwilds
+      LISTEN_PORT: "9881"
+    volumes:
+      - /mnt/cache/appdata/pterodactyl/metrics/exporter:/app:ro
+      - /mnt/cache/appdata/pterodactyl/wings/lib/volumes/0c921bcf-782b-495d-bf5b-bcc0d50a6d91/RSDragonwilds/Saved/Logs:/logs:ro
+      - /mnt/cache/appdata/pterodactyl/wings/lib/volumes/0c921bcf-782b-495d-bf5b-bcc0d50a6d91/RSDragonwilds/Saved/SaveGames:/saves:ro
+    networks: [metrics]

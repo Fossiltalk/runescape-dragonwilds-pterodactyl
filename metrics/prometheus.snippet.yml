@@ -1,0 +1,8 @@
+# Add under scrape_configs:
+  - job_name: dragonwilds
+    static_configs: [{ targets: ["dragonwilds-exporter:9881"] }]
+
+# Add to the cadvisor job's metric_relabel_configs (the regex is the Pterodactyl server UUID):
+      - { source_labels: [name], regex: "0c921bcf-782b-495d-bf5b-bcc0d50a6d91", target_label: server, replacement: Dragonwilds }
+
+# Then reload (no lifecycle API): docker kill -s HUP palworld_metrics-prometheus-1
