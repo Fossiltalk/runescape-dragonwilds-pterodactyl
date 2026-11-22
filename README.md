@@ -12,10 +12,14 @@ A Pterodactyl egg for the [RuneScape: Dragonwilds](https://dragonwilds.runescape
 
 - **Install:** SteamCMD installs app 4019830 anonymously into the volume (about 5 GB on disk), retrying up to 3 times because SteamCMD's first run often fails with `Missing configuration`. The script then seeds `RSDragonwilds/Saved/Config/LinuxServer/DedicatedServer.ini` with `[SectionsToSave]` and the `[/Script/Dominion.DedicatedServerSettings]` header if the file does not exist, and chowns everything to 988:988. An existing INI is never touched.
 - **Start:** `./RSDragonwildsServer.sh -log -Port={{SERVER_PORT}} -BeaconPort={{BEACON_PORT}} -ini:Game:[/Script/Engine.GameSession]:MaxPlayers={{MAX_PLAYERS}}`. The launcher script ships with the Steam app and runs `RSDragonwilds/Binaries/Linux/RSDragonwildsServer-Linux-Shipping RSDragonwilds`.
-- **Config:** on every start, Wings' `ini` parser writes `OwnerId`, `ServerName`, `DefaultWorldName`, `AdminPassword` and `WorldPassword` from the Panel variables into `DedicatedServer.ini`. Wings handles the section name with `/` and `.` (keys are written as `Key = Value`). `ServerGuid` and `AdministratorList` are never written by the egg, so the server's own values survive.
+- **Config:** on every start, Wings' `ini` parser writes `OwnerId`, `ServerName`, `DefaultWorldName`, `AdminPassword` and `WorldPassword` from the Panel variables into `DedicatedServer.ini`, as `Key = Value`. Wings handles the section name with `/` and `.`. The game reads the spaced format and rewrites the file a few seconds later as `Key=Value`. It drops `AdminPassword` from the file when it rewrites it, and Wings writes it back on the next start. The egg never writes `ServerGuid`, `KnownPlayerList` or `AdministratorList`, so the server's own values survive.
 - **Edits while running are lost.** The server rewrites the INI. Stop it first, or change the Panel variables.
-- **Stop:** `^C` (SIGINT). The image's `tini -g` passes it to the whole process group.
+- **Done string:** `CREATE SESSION - Advertise` (logged about 10 s after start, after `World settings beacon listening on port 8888`).
+- **Stop:** `^C` (SIGINT). The image's `tini -g` passes it to the whole process group. The engine shuts down cleanly in about 1 s (`LogExit: Exiting.`, `RequestExit(bForce=false, ReturnCode=130)`), and the container exits with code 130. **It does not write a final save.** Tested on 2026-11-22 with no players connected; the `.sav` mtime did not change. SIGTERM is worse: the process dies with no shutdown log, and Wings treats it as a crash and restarts it. Back up only after a clean stop, and expect to lose play since the last autosave.
+- **Owner ID in logs:** the game prints `OwnerId` in the console and in `Saved/Logs/RSDragonwilds.log`. Don't post those logs publicly.
 - **Saves:** `RSDragonwilds/Saved/SaveGames/*.sav`. On start the server loads the newest `.sav`, or creates a world named after `DEFAULT_WORLD_NAME`. Never rename a `.sav`.
+
+- **Verified version:** game build 1.0.2.2 (`LogNetVersion: Set ProjectVersion to 1.0.2.2`), Steam build id 26670300, engine `5.6.1-261625+++dominion+hotfix`. Players need the same game version.
 
 ## Variables
 
