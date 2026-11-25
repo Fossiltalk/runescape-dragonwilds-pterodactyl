@@ -71,4 +71,6 @@ Back up `RSDragonwilds/Saved/SaveGames/` and `RSDragonwilds/Saved/Config/LinuxSe
 2. Run the same game version as the server.
 3. In game, open **Worlds → Direct** and enter `100.109.134.72:7777`. Then join.
 
-Direct join by a Tailscale 100.x IP is not yet confirmed; it is tested in Phase 4 of [`BRIEFS.md`](BRIEFS.md).
+Direct join over Tailscale is verified (2026-11-22 and 2026-11-24).
+
+**Always type the address in the Direct tab. Do not use the Recent servers list.** A Recent entry reconnects through the EOS session, which hands out Tower's public IP. Behind CGNAT that attempt never reaches Tower, and the game shows "Connection lost / network connection was interrupted". The same Direct address works immediately (2026-11-24).
